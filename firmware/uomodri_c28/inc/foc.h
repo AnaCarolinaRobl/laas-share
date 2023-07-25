@@ -170,6 +170,15 @@ typedef struct __foc_control_t__
     lpf_t               resEstFlt;      /*!< Q-axis resistance estimation filter structure */
 } foc_t;
 
+typedef struct ObserverStruct{
+    double temperature;                                     /*!< Estimated temperature */
+    float tem_resistance;								    /*!< Measured" temperature computed from model obtained with least squares: T = K1 * (U / I) + K2 * (1 / I) + K3 */
+    float K1, K2, K3;                                       /*!< Constants obtained from least squares */
+    float k;												/*!< Temperature observer gain */
+    float trust;											/*!< Temperature observer "trust' (kind of like 1/covariance) */
+    float delta_t;											/*!< Temperature rise */
+    int otw_flag;                                           // Over-temp warning 
+}obs;
 /***********************************************************************
  * DEFINES
  ***********************************************************************/
@@ -182,6 +191,9 @@ typedef struct __foc_control_t__
 #define FOC_CMD_OFFSET_RUN          (FOC_CMD_SYSTEM_ENABLE | FOC_CMD_MOTOR_ENABLE | FOC_CMD_OFFSET_COMP_ENABLE)
 #define FOC_CMD_OFFSET_RUN_TEST(x)  (((x) & FOC_CMD_OFFSET_RUN) == FOC_CMD_OFFSET_RUN)
 // Resistance estimation uses Ohm's Law R = U/I so we have to ensure I != 0.
+#define DT					.000025f		// Loop period
+#define T_AMBIENT            27            // Temp ambient Celsius
+#define R_NOMINAL           .177f * 3       // Nominal resistance. Doute: pourquoi *3?
 // This threshold corresponds to the minimum current for the measure to be considered as correct.
 #define FOC_RE_CURRENT_THRESHOLD    0.1f
 
@@ -193,4 +205,6 @@ inline void FOC_runControl(foc_t*);
 inline float32_t FOC_runPD(pd_t*);
 void FOC_resetStruct(foc_t*);
 
+void reset_observer(obs*);
+void update_observer(foc_t* p_foc,obs* observer);
 #endif

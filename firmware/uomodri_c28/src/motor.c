@@ -45,8 +45,10 @@ inline bool_t MOT_runControl(motor_t* p_motor)
 {
     static float32_t enc_theta[2] = {MOTOR1_THETA_ALIGN_MAX, MOTOR2_THETA_ALIGN_MAX};
 
+    bool test_current = true;
     uint8_t         id          = p_motor->motor_id;
     foc_t*          p_foc       = p_motor->p_motorFOC;
+    obs*            observer    = p_motor->p_motorTMP;
 //    error_reg_u*    p_err       = &p_motor->motor_error;
     error_reg_u     err         = {.all = 0};
     encoder_t*      p_enc       = &p_foc->motor_enc;
@@ -55,7 +57,7 @@ inline bool_t MOT_runControl(motor_t* p_motor)
     p_enc->indexOffset          = en_bit.encOffsetEnable;
 
     // Read the phases current, voltage & Vbus
-    FOC_getMeasures(&p_foc->motor_acq);
+    FOC_getMeasures(&p_foc->motor_acq); //Is there that whe will get the measures
     // Read encoder position
     ENC_getPosition(p_enc);
     // Estimate speed
@@ -97,6 +99,7 @@ inline bool_t MOT_runControl(motor_t* p_motor)
         p_motor->motor_state    = (en_bit.systemEnable)             ? (p_motor->motor_state)    : (MOTOR_STATE_INIT);
         ENC_resetPeriph(p_enc);
         FOC_resetStruct(p_foc);
+        reset_observer(observer);
         MOT_stopCommand(p_motor);
         break;
 
@@ -118,6 +121,7 @@ inline bool_t MOT_runControl(motor_t* p_motor)
         p_foc->idRef            = p_foc->iAlignMax; // Maintain alignment current
         p_foc->iqRef            = 0.0f;
         p_motor->motor_state    = (p_motor->itCnt < (2 * PWM_FREQ)) ? (MOTOR_STATE_ALIGN_FIX)   : (MOTOR_STATE_READY);
+        p_motor->motor_state    = (test_current)                    ? (MOTOR_STATE_READY_GET_CUR):(MOTOR_STATE_READY);
         p_motor->motor_state    = (en_bit.motorEnable)              ? (p_motor->motor_state)    : (MOTOR_STATE_INIT);
         p_motor->motor_state    = (en_bit.systemEnable)             ? (p_motor->motor_state)    : (MOTOR_STATE_INIT);
         ENC_resetPeriph(p_enc);
@@ -135,13 +139,23 @@ inline bool_t MOT_runControl(motor_t* p_motor)
         FOC_runControl(p_foc);
         MOT_runCommand(p_motor, p_foc->dtc_u, p_foc->dtc_v, p_foc->dtc_w);
         break;
-
+    case MOTOR_STATE_READY_GET_CUR:
+        p_motor->itCnt         += 1U;
+        p_foc->idRef            = p_motor->p_motorFOC->motor_cmd.velRef;
+        p_foc->iqRef            = 0.0f;
+        p_motor->motor_state    = (en_bit.motorEnable)              ? (MOTOR_STATE_READY_GET_CUR)       : (MOTOR_STATE_STOP);
+        p_motor->motor_state    = (en_bit.systemEnable)             ? (p_motor->motor_state)            : (MOTOR_STATE_INIT);
+        FOC_runControl(p_foc);
+        MOT_runCommand(p_motor, p_foc->dtc_u, p_foc->dtc_v, p_foc->dtc_w);
+        update_observer(p_foc, observer);
+        break;
     case MOTOR_STATE_STOP:
         p_motor->itCnt         += 1U;
         p_foc->idRef            = 0.0f;
         p_foc->iqRef            = 0.0f;
-        p_motor->motor_state    = (!en_bit.motorEnable)             ? (MOTOR_STATE_STOP)        : (MOTOR_STATE_READY);
-        p_motor->motor_state    = (en_bit.systemEnable)             ? (p_motor->motor_state)    : (MOTOR_STATE_INIT);
+        p_motor->motor_state    = (!en_bit.motorEnable)             ? (MOTOR_STATE_STOP)            : (MOTOR_STATE_READY);
+        p_motor->motor_state    = (test_current)                    ? (MOTOR_STATE_READY_GET_CUR)   : (MOTOR_STATE_READY);
+        p_motor->motor_state    = (en_bit.systemEnable)             ? (p_motor->motor_state)        : (MOTOR_STATE_INIT);
         FOC_runControl(p_foc);
         MOT_runCommand(p_motor, p_foc->dtc_u, p_foc->dtc_v, p_foc->dtc_w);
         break;

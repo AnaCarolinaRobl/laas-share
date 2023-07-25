@@ -14,7 +14,7 @@
  * @param[out]      p_cmd_m2    Pointer on the command structure used for MOTOR_2 control(actions to be realized by motor_foc).
  * @return          Is message received from Master board valid or not ?
  */
-bool_t COM_msgExtract(mst2slv_msg_t* p_msg,  cmd_t* p_cmd_m1,  cmd_t* p_cmd_m2)
+bool_t COM_msgExtract(mst2slv_msg_t* p_msg,  cmd_t* p_cmd_m1,  cmd_t* p_cmd_m2) // PC vers omodri direction
 {
     uint32_t crc                        = COM_crc32((uint16_t *) p_msg, COM_MSG_TX_RX_16BIT_PAYLOAD_LENGTH);
     if((MSB_32(crc) == p_msg->crc.u16_msb) && (LSB_32(crc) == p_msg->crc.u16_lsb))
@@ -22,7 +22,7 @@ bool_t COM_msgExtract(mst2slv_msg_t* p_msg,  cmd_t* p_cmd_m1,  cmd_t* p_cmd_m2)
         int32_t pos_s32                 = (int32_t)FUS_16_TO_32(p_msg->position[MOTOR_1].u16_msb, p_msg->position[MOTOR_1].u16_lsb);
         cmd_reg_t* p_cmd_reg            = &p_cmd_m1->enableReg.bit;
         p_cmd_m1->posRef                = (float32_t)(pos_s32                   * POSITION_LSB      * FM_ROUND2RAD);
-        p_cmd_m1->velRef                = (float32_t)(p_msg->velocity[MOTOR_1]  * VELOCITY_LSB      * FM_KRPM2RADPS);
+        p_cmd_m1->velRef                = (float32_t)(p_msg->velocity[MOTOR_1]  * VELOCITY_LSB); 
         p_cmd_m1->iqff                  = (float32_t)(p_msg->current[MOTOR_1]   * IQ_LSB);
         p_cmd_m1->kpCoeff               = (float32_t)(p_msg->kpCoeff[MOTOR_1]   * KP_LSB            * FM_RAD2ROUND);
         p_cmd_m1->kdCoeff               = (float32_t)(p_msg->kdCoeff[MOTOR_1]   * KD_LSB            * FM_RADPS2KRPM);
@@ -40,7 +40,7 @@ bool_t COM_msgExtract(mst2slv_msg_t* p_msg,  cmd_t* p_cmd_m1,  cmd_t* p_cmd_m2)
         pos_s32                         = (int32_t)FUS_16_TO_32(p_msg->position[MOTOR_2].u16_msb, p_msg->position[MOTOR_2].u16_lsb);
         p_cmd_reg                       = &p_cmd_m2->enableReg.bit;
         p_cmd_m2->posRef                = (float32_t)(pos_s32                   * POSITION_LSB      * FM_ROUND2RAD);
-        p_cmd_m2->velRef                = (float32_t)(p_msg->velocity[MOTOR_2]  * VELOCITY_LSB      * FM_KRPM2RADPS);
+        p_cmd_m2->velRef                = (float32_t)(p_msg->velocity[MOTOR_2]  * VELOCITY_LSB);
         p_cmd_m2->iqff                  = (float32_t)(p_msg->current[MOTOR_2]   * IQ_LSB);
         p_cmd_m2->kpCoeff               = (float32_t)(p_msg->kpCoeff[MOTOR_2]   * KP_LSB            * FM_RAD2ROUND);
         p_cmd_m2->kdCoeff               = (float32_t)(p_msg->kdCoeff[MOTOR_2]   * KD_LSB            * FM_RADPS2KRPM);
@@ -180,16 +180,17 @@ bool_t COM_msgExtract_cla(mst2slv_msg_cla_t* p_msg, cmd_t* p_cmd_m1, cmd_t* p_cm
  * @param[in]       p_motor_m2  Pointer on data structure used for MOTOR_1 control.
  * @param[inout]    p_msg       Pointer on the message to transmit to the Master board
  */
-void COM_msgCreate(motor_t* p_motor_m1, motor_t* p_motor_m2, slv2mst_msg_t* p_msg)
+void COM_msgCreate(motor_t* p_motor_m1, motor_t* p_motor_m2, slv2mst_msg_t* p_msg) // Omodri vers PC
 {
     foc_t* p_foc                        = p_motor_m1->p_motorFOC;
+    obs* observer                       = p_motor_m1->p_motorTMP;
     motor_state_e state                 = p_motor_m1->motor_state;
     error_reg_u* p_err[2]               = {&p_motor_m1->motor_error, &p_motor_m2->motor_error};
     encoder_t* p_enc                    = &p_foc->motor_enc;
     cmd_reg_t* p_cmd_reg                = &p_foc->motor_cmd.enableReg.bit;
     float32_t pos_offset                = p_enc->thetaAbsolute - ((p_cmd_reg->encOffsetEnable) ? (p_enc->thetaIndex) : (0.0f));
     int32_t pos                         = (int32_t)(pos_offset                  / POSITION_LSB      * FM_RAD2ROUND);
-    bool_t align_done                   = (state == MOTOR_STATE_READY) || (state == MOTOR_STATE_STOP);
+    bool_t align_done                   = (state == MOTOR_STATE_READY) || (state == MOTOR_STATE_STOP) || MOTOR_STATE_READY_GET_CUR;
     // Update status field - MOTOR_1
     p_msg->status.bit.M1E               = p_cmd_reg->motorEnable;   // MOTOR_1 enabled
     p_msg->status.bit.M1R               = align_done;               // MOTOR_1 ready
@@ -197,23 +198,23 @@ void COM_msgCreate(motor_t* p_motor_m1, motor_t* p_motor_m2, slv2mst_msg_t* p_ms
     p_msg->status.bit.IDX1D             = p_enc->indexDetect;       // MOTOR_1 index detected
     p_msg->position[MOTOR_1].u16_msb    = MSB_32(pos);
     p_msg->position[MOTOR_1].u16_lsb    = LSB_32(pos);
-    p_msg->velocity[MOTOR_1]            = (int16_t)(p_enc->speed.speedMech[0]   / VELOCITY_LSB      * FM_RADPS2KRPM);
-    p_msg->current[MOTOR_1]             = (int16_t)(p_foc->iq                   / IQ_LSB);
-    p_msg->coilRes[MOTOR_1]             = (uint16_t)(p_foc->resEst              / RESISTANCE_LSB);
-    p_msg->adcSamples[MOTOR_1]          = (uint16_t)(p_foc->motor_acq.vExt      / VOLTAGE_LSB);
-
+    p_msg->velocity[MOTOR_1]            = (int16_t)(p_foc->motor_acq.vbus       / TENSION_LSB);          // (int16_t)(p_enc->speed.speedMech[0]   / VELOCITY_LSB      * FM_RADPS2KRPM);
+    p_msg->coilRes[MOTOR_1]             = 0;
+    p_msg->adcSamples[MOTOR_1]          = (uint16_t)(p_foc->motor_acq.vExt      / TENSION_LSB);
+    p_msg->current[MOTOR_1]             = (int16_t)(p_foc->iq                           / IQ_LSB);
     p_msg->status.bit.SE                = p_cmd_reg->systemEnable;  // System enabled
     p_msg->status.bit.STATUS_RSV1       = 0;
     p_msg->lastCmdIndex                 = p_foc->motor_cmd.index;
     p_msg->timeStamp                    = (uint16_t)CPUTimer_getTimerCount(CPU_TIMER_0_BASE);
 
     p_foc                               = p_motor_m2->p_motorFOC;
+    observer                            = p_motor_m2->p_motorTMP;
     state                               = p_motor_m2->motor_state;
     p_enc                               = &p_foc->motor_enc;
     p_cmd_reg                           = &p_foc->motor_cmd.enableReg.bit;
     pos_offset                          = p_enc->thetaAbsolute - ((p_cmd_reg->encOffsetEnable) ? (p_enc->thetaIndex) : (0.0f));
     pos                                 = (int32_t)(pos_offset                  / POSITION_LSB      * FM_RAD2ROUND);
-    align_done                          = (state == MOTOR_STATE_READY) || (state == MOTOR_STATE_STOP);
+    align_done                          = (state == MOTOR_STATE_READY) || (state == MOTOR_STATE_STOP) || MOTOR_STATE_READY_GET_CUR;
     // Update status field - MOTOR_2
     p_msg->status.bit.M2E               = p_cmd_reg->motorEnable;   // MOTOR_2 enabled
     p_msg->status.bit.M2R               = align_done;               // MOTOR_2 ready
@@ -221,10 +222,11 @@ void COM_msgCreate(motor_t* p_motor_m1, motor_t* p_motor_m2, slv2mst_msg_t* p_ms
     p_msg->status.bit.IDX2D             = p_enc->indexDetect;       // MOTOR_2 index detected
     p_msg->position[MOTOR_2].u16_msb    = MSB_32(pos);
     p_msg->position[MOTOR_2].u16_lsb    = LSB_32(pos);
-    p_msg->velocity[MOTOR_2]            = (int16_t)(p_enc->speed.speedMech[0]   / VELOCITY_LSB      * FM_RADPS2KRPM);
-    p_msg->current[MOTOR_2]             = (int16_t)(p_foc->iq                   / IQ_LSB);
-    p_msg->coilRes[MOTOR_2]             = (uint16_t)(p_foc->resEst              / RESISTANCE_LSB);
-    p_msg->adcSamples[MOTOR_2]          = (uint16_t)(p_foc->motor_acq.vExt      / VOLTAGE_LSB);
+    p_msg->velocity[MOTOR_2]            = (int16_t)(p_foc->id                           / VELOCITY_LSB);   // (p_enc->speed.speedMech[0]   / VELOCITY_LSB      * FM_RADPS2KRPM);
+    p_msg->current[MOTOR_2]             = (uint16_t)(observer->temperature                 / TEMPERATURE_LSB);
+    p_msg->coilRes[MOTOR_2]             = (uint16_t)(p_foc->uq                          / TENSION_LSB);
+    p_msg->adcSamples[MOTOR_2]          = (int16_t)(p_foc->ud                           / TENSION_LSB);
+    
 
 #if 0
     if((!p_err[MOTOR_1]->all) && (!p_err[MOTOR_2]->all))

@@ -5,6 +5,8 @@
 #include "device.h"
 #include "foc.h"
 #include "communication.h"
+#include <time.h>
+
 
 /***********************************************************************
  * FUNCTIONS DECLARATION
@@ -60,7 +62,7 @@ inline void FOC_resetMeasuresStruct(acq_t* p_acq)
  * @brief       Compute sine and cosine from the electrical angle
  * @param[in]   *p_foc  Pointer on the FOC motor control structure.
  */
-inline void FOC_resistanceEstimation(foc_t* p_foc)
+inline void FOC_resistanceEstimation(foc_t* p_foc) //What resistance? Question
 {
     // Compute resistance
     // Only compute if measured current is over a threshold
@@ -69,6 +71,91 @@ inline void FOC_resistanceEstimation(foc_t* p_foc)
 
     return;
 }
+
+
+float32_t GainCommande(float32_t tension){
+    return 0.8715636778016645 * exp(-41.33915502588072 * tension) + 1;
+}
+
+void reset_observer(obs* observer){
+    observer->temperature = T_AMBIENT;
+    observer->tem_resistance = T_AMBIENT;
+    observer->K1 = 490;
+    observer->K2 = -125;
+    observer->K3 = -97.5;
+}
+
+double cpu_time_used;
+
+void update_observer(foc_t* p_foc, obs* observer)//, ObserverStruct *observer)
+{
+    // DOUTES: 
+        // speed ou speed_elec
+
+    // Temperature estimation with least squares model
+    observer->tem_resistance  = observer->K1 * ((p_foc->uq + p_foc->ud) / (p_foc->iq + p_foc->id)) + observer->K2 * (1 / (p_foc->iq + p_foc->id)) + observer->K3;
+
+
+    // Temperature estimation with thermal model
+    observer->delta_t = (float)observer->temperature - T_AMBIENT;
+    float current = p_foc->id*p_foc->id + p_foc->iq*p_foc->iq;
+    double temp_derivate = (current * .0102f) - (observer->delta_t/529);
+    observer->temperature += DT*(temp_derivate);
+
+
+    // // Fusion temperatures (model and resistance)
+    // float e = (float)observer->temperature - observer->tem_resistance;
+    // observer->trust = (1.0f - .004f*fminf(abs(p_foc->motor_enc.speed.speedElec), 250.0f)) * (.01f*(fminf(current, 100.0f)));
+    // observer->temperature -= observer->trust*.0001f*e;
+
+
+    // if(observer->temperature > TEMP_MAX){observer->otw_flag = 1;}
+    // else{observer->otw_flag = 0;}
+
+
+
+
+    // // Resistance determination
+    // static float rd = R_NOMINAL/3, rq = R_NOMINAL/3;
+    // if (p_foc->id!=0)
+    //     rd = (p_foc->ud*(p_foc->dtcMax-p_foc->dtcMin) + p_foc->motor_enc.speed.speedElec*(MOTOR1_LS*p_foc->iq))/(p_foc->id);
+    
+    // if (p_foc->iq!=0)
+    //     rq = (p_foc->uq*(p_foc->dtcMax-p_foc->dtcMin) - p_foc->motor_enc.speed.speedElec*(MOTOR1_LS*p_foc->id))/(p_foc->iq);
+    
+    // p_foc->resEst = (rd*p_foc->id + rq*p_foc->iq)/(p_foc->id + p_foc->iq); // voltages more accurate at higher duty cycles
+    // if(isnan(p_foc->resEst) || isinf(p_foc->resEst)){p_foc->resEst = R_NOMINAL/3;}
+
+    /*** BEN CODE  ***/
+    // /// Update observer estimates ///
+    // // Resistance observer //
+    // // Temperature Observer //
+    // observer->delta_t = (float)observer->temperature - T_AMBIENT;
+    // float i_sq = controller->i_d*controller->i_d + controller->i_q*controller->i_q;
+    // observer->q_in = (R_NOMINAL*1.5f)*(1.0f + .00393f*observer->delta_t)*i_sq;
+    // observer->q_out = observer->delta_t*R_TH;
+    // observer->temperature += (INV_M_TH*DT)*(observer->q_in-observer->q_out);
+
+    // //float r_d = (controller->v_d*(DTC_MAX-DTC_MIN) + SQRT3*controller->dtheta_elec*(L_Q*controller->i_q))/(controller->i_d*SQRT3);
+    // float r_q = (controller->v_q*(DTC_MAX-DTC_MIN) - SQRT3*controller->dtheta_elec*(L_D*controller->i_d + WB))/(controller->i_q*SQRT3);
+    // observer->resistance = r_q;//(r_d*controller->i_d + r_q*controller->i_q)/(controller->i_d + controller->i_q); // voltages more accurate at higher duty cycles
+
+    // //observer->resistance = controller->v_q/controller->i_q;
+    // if(isnan(observer->resistance) || isinf(observer->resistance)){observer->resistance = R_NOMINAL;}
+    // float t_raw = ((T_AMBIENT + ((observer->resistance/R_NOMINAL) - 1.0f)*254.5f));
+    // if(t_raw > 200.0f){t_raw = 200.0f;}
+    // else if(t_raw < 0.0f){t_raw = 0.0f;}
+    // observer->temp_measured = .999f*observer->temp_measured + .001f*t_raw;
+    // float e = (float)observer->temperature - observer->temp_measured;
+    // observer->trust = (1.0f - .004f*fminf(abs(controller->dtheta_elec), 250.0f)) * (.01f*(fminf(i_sq, 100.0f)));
+    // observer->temperature -= observer->trust*.0001f*e;
+    // //printf("%.3f\n\r", e);
+
+    // if(observer->temperature > TEMP_MAX){controller->otw_flag = 1;}
+    // else{controller->otw_flag = 0;}
+}
+
+
 
 /**
  * @brief           Compute the Field Oriented Control (FOC) algorithm
@@ -82,13 +169,13 @@ inline void FOC_runControl(foc_t* p_foc)
     p_foc->sinTheta         = __sin(p_enc->thetaElec);
     p_foc->cosTheta         = __cos(p_enc->thetaElec);
     // Clarke transform
-    p_foc->ialpha           = ((2.0f * p_acq->ia) - p_acq->ib - p_acq->ic) * FM_1DIV3;
-    p_foc->ibeta            = (p_acq->ib - p_acq->ic) * FM_1DIVSQRT3;
+    p_foc->ialpha           = ((2.0f * p_acq->ia) - p_acq->ib - p_acq->ic) * FM_1DIV3; // Why FM_1DIV3 and not DIV2? Question
+    p_foc->ibeta            = (p_acq->ib - p_acq->ic) * FM_1DIVSQRT3; 
     // Park transform + filtering
     float32_t id            = (p_foc->sinTheta * p_foc->ibeta) + (p_foc->cosTheta * p_foc->ialpha);
-    UOMODRI_IDQ_FLT(p_foc->iParkFlt, p_foc->id, id);
+    UOMODRI_IDQ_FLT(p_foc->iParkFlt, p_foc->id, id); // why filtre PB? Question
     float32_t iq            = (p_foc->cosTheta * p_foc->ibeta) - (p_foc->sinTheta * p_foc->ialpha);
-    UOMODRI_IDQ_FLT(p_foc->iParkFlt, p_foc->iq, iq);
+    UOMODRI_IDQ_FLT(p_foc->iParkFlt, p_foc->iq, iq); 
     // Compute decoupling feed-forward terms
 #if (UOMODRI_FEED_FORWARD_ENABLE)
     const params_t* p_cfg   = &p_foc->motor_cfg;

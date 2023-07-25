@@ -1153,7 +1153,7 @@
 /***********************************************************************
  * COMMUNICATION DEFINES
  ***********************************************************************/
-#define COM_MSG_TX_RX_8BIT_FULL_LENGTH          (34)
+#define COM_MSG_TX_RX_8BIT_FULL_LENGTH          (34) // MAXIMUN TAILLE FOR THE TRAM = 34
 #define COM_MSG_TX_RX_16BIT_FULL_LENGTH         (COM_MSG_TX_RX_8BIT_FULL_LENGTH / 2)
 #define COM_MSG_TX_RX_8BIT_CRC_LENGTH           (4)
 #define COM_MSG_TX_RX_16BIT_CRC_LENGTH          (COM_MSG_TX_RX_8BIT_CRC_LENGTH / 2)
@@ -1166,9 +1166,12 @@
 #define POSITION_LSB                            (5.960464477539063e-08f)    // 2**(-24)
 #define VELOCITY_LSB                            (4.8828125e-04f)            // 2**(-11)
 #define IQ_LSB                                  (9.765625e-04f)             // 2**(-10)
+#define CURRENT                                 (9.765625e-04f)             // 2**(-10)
 #define CURRENT_SAT_LSB                         (1.25e-01f)                 // 2**(-3)
 #define RESISTANCE_LSB                          (3.0517578125e-05f)         // 2**(-15)
 #define VOLTAGE_LSB                             (6.103515625e-05f)          // 2**(-14)
+#define TENSION_LSB                             (4.8828125e-04f)            // 2**(-11)
+#define TEMPERATURE_LSB                         (1.953125e-03f)             // 2**(-09)
 #define KP_LSB                                  (4.8828125e-04f)            // 2**(-11)
 #define KD_LSB                                  (9.765625e-04f)             // 2**(-10)
 

@@ -297,7 +297,7 @@ typedef struct __slv2mst_msg_t__
     int16_t         velocity[2];
     int16_t         current[2];
     uint16_t        coilRes[2];
-    uint16_t        adcSamples[2];
+    int16_t         adcSamples[2];
     uint16_t        lastCmdIndex;
     U32toU16_reg_t  crc;
 } slv2mst_msg_t;

@@ -31,6 +31,7 @@ typedef enum
     MOTOR_STATE_ALIGN_FIX       = 0x02,
     MOTOR_STATE_READY           = 0x04,
     MOTOR_STATE_STOP            = 0x08,
+    MOTOR_STATE_READY_GET_CUR   = 0x0C,
     MOTOR_STATE_ERROR           = 0xFF,
 } motor_state_e;
 
@@ -85,6 +86,7 @@ typedef struct __MOTOR_STRUCT_t__
     const hal_motor_cfg_t*  const   p_motorHalCfg;  /*!< Pointer on the HAL structure (PWM, ADC , IT) associated to the motor */
     drv8353_t* const                p_motorDRV;     /*!< Pointer on the DRV structure associated to the motor */
     foc_t* const                    p_motorFOC;     /*!< Pointer on the FOC structure associated to the motor */
+    obs*                            p_motorTMP;     /*!< Pointer on the OBS/Temperature structure associated to the motor */
     uint64_t                        itCnt;          /*!< Event counter incrementing on every IT call */
     uint32_t                        clCycleNb;
     float32_t                       statorResEst;   /*!< Q-axis resistance estimation. [Ohm] */

@@ -246,7 +246,7 @@ void main(void)
 /**
  * @brief           Microcontroller initialization function
  *                  - Configure master clock to 200MHz
- *                  - Configure auxiliary clock (CM core) to 125MHz (USB à 60MHz)
+ *                  - Configure auxiliary clock (CM core) to 125MHz (USB ï¿½ 60MHz)
  *                  - Enable GPIO clocking
  *                  - Configure the interruption vector table
  *                  - Boot CM from flash or RAM
