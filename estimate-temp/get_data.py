@@ -22,8 +22,8 @@ p0 = np.array([0,0.1])
 R = 0.02
 
 
-ids, iqs = []
-vds, vqs = []
+ids, iqs = [],[]
+vds, vqs = [], []
 times = []
 temps_measured = []
 temps_model = []
@@ -38,13 +38,14 @@ comm = 0
 init_time = 0
 add_i = .5
 
+
 K1, K2, K3 = 490, -125, -97.5
 
 start_time = False
+warming = True
 
-TempAmbiente = float(input('Digite a temperatura ambiente: '))
+temp_measured = float(input('Digite a temperatura ambiente: '))
 # temperatures.append(TempAmbiente)
-temp = TempAmbiente
 
 init_time = time.time()
 while True:
@@ -56,22 +57,24 @@ while True:
     if time.time() - init_time > 1:
         I += add_i
         if warming:
-            if I == 6:
+            if I >= 6:
                 add_i = -0.5
-            elif I == 3:
+            elif I <= 3:
                 add_i = 0.5
         else:
-            if I == 3:
+            if I >= 3:
                 add_i = -0.5
-            elif I == 0:
+            elif I <= 0:
                 add_i = 0.5
 
         # get data
         id  = ud.velocity1
         temperature_model = ud.current1
-        vq = ud.coilRes1
+        vq = 0
+        # vq = ud.coilRes1
         vd  = ud.adcSamples1
-        iq  = ud.current0
+        iq = 0
+        # iq  = ud.current0
 
         time_measured = time.time() - init_time
 
@@ -94,24 +97,27 @@ while True:
         vds.append(round(vd, 4))
         vqs.append(round(vd, 4))
         temps_lstq.append(round(temp_lstq, 1))
+        temps_model.append(round(temperature_model, 1))
 
         print( "id measured", round(id, 3), 
             "temperatura medida: ", round(temp_measured, 1), "temperatura estimada: ", temp_lstq)
 
 
-        # update temperature
+        # update temperature+ str(iqs[i]) + ", "
         key = str(input('Subiu(ENTER), Desceu (d), Sortie (s), Up Current (x)'))  
         if key == '':
             temp_measured = temp_measured+0.1
-        elif key == 'd':  
+        elif key == 'e':  
             temp_measured = temp_measured-0.1
         elif key == 'x':  
             I += 1
+        elif key == 'd':  
+            I -= 1
         
         # change between warming or cooling
-        if key == 'i':  
+        if key == 'r':  
             warming = not warming
-            I = 0 if warming else 3
+            I = 1.5 if warming else 0
         
         # finish test
         if key == 's':
@@ -127,7 +133,7 @@ ud.stop() # Terminate
 
 # Save data in file
 f = open("data.txt", "w")
-f.write("Time, Id, , Iq, Ud, Uq, Temperature Measured, Temperature_LSTQ, Temperature_Model\n")
+f.write("Time, Id, Iq, Ud, Uq, Temperature Measured, Temperature_LSTQ, Temperature_Model\n")
 
 for i in range(len(times)):
     f.write(str(times[i]) + ", " 

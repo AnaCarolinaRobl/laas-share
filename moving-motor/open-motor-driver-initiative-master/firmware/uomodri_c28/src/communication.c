@@ -22,7 +22,7 @@ bool_t COM_msgExtract(mst2slv_msg_t* p_msg,  cmd_t* p_cmd_m1,  cmd_t* p_cmd_m2) 
         int32_t pos_s32                 = (int32_t)FUS_16_TO_32(p_msg->position[MOTOR_1].u16_msb, p_msg->position[MOTOR_1].u16_lsb);
         cmd_reg_t* p_cmd_reg            = &p_cmd_m1->enableReg.bit;
         p_cmd_m1->posRef                = (float32_t)(pos_s32                   * POSITION_LSB      * FM_ROUND2RAD);
-        p_cmd_m1->velRef                = (float32_t)(p_msg->velocity[MOTOR_1]  * VELOCITY_LSB); 
+        p_cmd_m1->velRef                = (float32_t)(p_msg->velocity[MOTOR_1]  * VELOCITY_LSB      * FM_KRPM2RADPS);
         p_cmd_m1->iqff                  = (float32_t)(p_msg->current[MOTOR_1]   * IQ_LSB);
         p_cmd_m1->kpCoeff               = (float32_t)(p_msg->kpCoeff[MOTOR_1]   * KP_LSB            * FM_RAD2ROUND);
         p_cmd_m1->kdCoeff               = (float32_t)(p_msg->kdCoeff[MOTOR_1]   * KD_LSB            * FM_RADPS2KRPM);
@@ -40,7 +40,7 @@ bool_t COM_msgExtract(mst2slv_msg_t* p_msg,  cmd_t* p_cmd_m1,  cmd_t* p_cmd_m2) 
         pos_s32                         = (int32_t)FUS_16_TO_32(p_msg->position[MOTOR_2].u16_msb, p_msg->position[MOTOR_2].u16_lsb);
         p_cmd_reg                       = &p_cmd_m2->enableReg.bit;
         p_cmd_m2->posRef                = (float32_t)(pos_s32                   * POSITION_LSB      * FM_ROUND2RAD);
-        p_cmd_m2->velRef                = (float32_t)(p_msg->velocity[MOTOR_2]  * VELOCITY_LSB);
+        p_cmd_m2->velRef                = (float32_t)(p_msg->velocity[MOTOR_2]  * VELOCITY_LSB      * FM_KRPM2RADPS);
         p_cmd_m2->iqff                  = (float32_t)(p_msg->current[MOTOR_2]   * IQ_LSB);
         p_cmd_m2->kpCoeff               = (float32_t)(p_msg->kpCoeff[MOTOR_2]   * KP_LSB            * FM_RAD2ROUND);
         p_cmd_m2->kdCoeff               = (float32_t)(p_msg->kdCoeff[MOTOR_2]   * KD_LSB            * FM_RADPS2KRPM);
@@ -201,7 +201,7 @@ void COM_msgCreate(motor_t* p_motor_m1, motor_t* p_motor_m2, slv2mst_msg_t* p_ms
     p_msg->velocity[MOTOR_1]            = (int16_t)(p_foc->motor_acq.vbus       / TENSION_LSB);          // (int16_t)(p_enc->speed.speedMech[0]   / VELOCITY_LSB      * FM_RADPS2KRPM);
     p_msg->coilRes[MOTOR_1]             = 0;
     p_msg->adcSamples[MOTOR_1]          = (uint16_t)(p_foc->motor_acq.vExt      / TENSION_LSB);
-    p_msg->current[MOTOR_1]             = (int16_t)(p_foc->iq                           / IQ_LSB);
+    // p_msg->current[MOTOR_1]             = (int16_t)(p_foc->iq                           / IQ_LSB);
     p_msg->status.bit.SE                = p_cmd_reg->systemEnable;  // System enabled
     p_msg->status.bit.STATUS_RSV1       = 0;
     p_msg->lastCmdIndex                 = p_foc->motor_cmd.index;
@@ -226,6 +226,7 @@ void COM_msgCreate(motor_t* p_motor_m1, motor_t* p_motor_m2, slv2mst_msg_t* p_ms
     p_msg->current[MOTOR_2]             = (int16_t)(p_foc->id                           / VELOCITY_LSB);
     p_msg->coilRes[MOTOR_2]             = (uint16_t)(p_foc->uq                          / TENSION_LSB);
     p_msg->adcSamples[MOTOR_2]          = (int16_t)(p_foc->ud                           / TENSION_LSB);
+    p_msg->current[MOTOR_1]             = (int16_t)(p_foc->iq                           / IQ_LSB);
     
 
 #if 0

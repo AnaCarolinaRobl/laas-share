@@ -104,9 +104,9 @@ void update_observer(foc_t* p_foc, obs* observer)//, ObserverStruct *observer)
 
 
     // // Fusion temperatures (model and resistance)
-    // float e = (float)observer->temperature - observer->tem_resistance;
-    // observer->trust = (1.0f - .004f*fminf(abs(p_foc->motor_enc.speed.speedElec), 250.0f)) * (.01f*(fminf(current, 100.0f)));
-    // observer->temperature -= observer->trust*.0001f*e;
+    float e = (float)observer->temperature - observer->tem_resistance;
+    observer->trust = (1.0f - .004f*fminf(abs(p_foc->motor_enc.speed.speedElec), 250.0f)) * (.01f*(fminf(current, 100.0f)));
+    observer->temperature -= observer->trust*.0001f*e;
 
 
     // if(observer->temperature > TEMP_MAX){observer->otw_flag = 1;}
