@@ -1,0 +1,72 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+# Nome do arquivo de texto
+nome_arquivo = "data.txt"
+
+# Listas para armazenar os valores
+times = []
+ids, iqs = [], []
+vds, vqs = [], []
+temps_measured = []
+temps_model_omodri = []
+temps_lstq = []
+
+
+# Leitura do arquivo de texto
+with open(nome_arquivo, "r") as arquivo:
+    # Ignora a primeira linha (cabeçalho)
+    next(arquivo)
+    
+    # Lê as linhas restantes do arquivo
+    for linha in arquivo:
+        # Divide a linha em comando e corrente
+        time, id, iq, vd, vq, temp_measured, temp_lstq, temp_model = linha.strip().split(",")
+        
+        # Converte os valores para float e adiciona às listas
+        times.append(float(time))
+        ids.append(float(id))
+        iqs.append(float(iq))
+        vds.append(float(vd))
+        vqs.append(float(vq))
+        temps_measured.append(float(temp_measured))
+        temps_model_omodri.append(float(temp_model))
+        temps_lstq.append(float(temp_lstq))
+
+
+def calcular_espectro_de_frequencias(x, y):
+    # Calcula a Transformada de Fourier dos dados (x, y)
+    fft_result = np.fft.fft(y)
+
+    # Calcula as frequências correspondentes ao espectro
+    n = len(y)  # Número de pontos na série de dados
+    frequencias = np.fft.fftfreq(n, d=(x[1] - x[0]))
+
+    # Ajuste do espectro para exibir apenas as frequências positivas
+    metade = n // 2
+    frequencias = frequencias[:metade]
+    fft_result = fft_result[:metade]
+
+    # Retorna o espectro de frequências e os valores da Transformada de Fourier
+    return frequencias, fft_result
+
+# Exemplo de uso:
+# Dados de exemplo
+# x = np.linspace(0, 2 * np.pi, 1000)
+# y = np.sin(5 * x) + 0.5 * np.sin(20 * x)  # Sinal com duas componentes de frequência
+
+x = times
+y = temps_measured
+
+# Calcula o espectro de frequências
+frequencias, espectro = calcular_espectro_de_frequencias(x, y)
+
+# Plot do espectro de frequências
+plt.figure()
+plt.plot(frequencias, np.log(np.abs(espectro)))  # np.abs() retorna o módulo da Transformada de Fourier
+plt.xlabel('Frequência (Hz)')
+plt.ylabel('Magnitude')
+plt.title('Espectro de Frequências')
+plt.grid(True)
+plt.show()
