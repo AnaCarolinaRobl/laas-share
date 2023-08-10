@@ -1170,7 +1170,7 @@
 #define CURRENT_SAT_LSB                         (1.25e-01f)                 // 2**(-3)
 #define RESISTANCE_LSB                          (3.0517578125e-05f)         // 2**(-15)
 #define VOLTAGE_LSB                             (6.103515625e-05f)          // 2**(-14)
-#define TENSION_LSB                             (4.8828125e-04f)            // 2**(-11)
+#define TENSION_LSB                             (9.765625e-04f)           // 2**(-10)
 #define TEMPERATURE_LSB                         (1.953125e-03f)             // 2**(-09)
 #define KP_LSB                                  (4.8828125e-04f)            // 2**(-11)
 #define KD_LSB                                  (9.765625e-04f)             // 2**(-10)

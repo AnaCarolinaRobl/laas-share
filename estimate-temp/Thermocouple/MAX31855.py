@@ -11,10 +11,13 @@ import time
 from IPython import embed
 
 class SPIuDriver_Temp:
-  def __init__(self, ctrl):
+  def __init__(self):
 
     #Initialise SPI
-    self.spi = ctrl.get_port(1, mode=0, freq=5000000)
+    self.ctrl = SpiController()
+    self.ctrl.configure('ftdi://ftdi:232h/1') # Configure the first interface (IF/1) of the FTDI device as a SPI master
+    self.spi = self.ctrl.get_port(0, mode=0, freq=8000000)
+
 
 
   def read(self):

@@ -88,7 +88,6 @@ def MEDIAN_FILTER(arr, LENGTH):
         x = round(sum(temps_vec)/len(temps_vec), 1)
         arr_flt.append(x)
 
-
     return arr_flt
 
 def HPF_FILTER(tau, xs):

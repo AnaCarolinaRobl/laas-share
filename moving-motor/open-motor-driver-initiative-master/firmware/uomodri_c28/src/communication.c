@@ -223,10 +223,10 @@ void COM_msgCreate(motor_t* p_motor_m1, motor_t* p_motor_m2, slv2mst_msg_t* p_ms
     p_msg->position[MOTOR_2].u16_msb    = MSB_32(pos);
     p_msg->position[MOTOR_2].u16_lsb    = LSB_32(pos);
     p_msg->velocity[MOTOR_2]            = (int16_t)(p_enc->speed.speedMech[0]   / VELOCITY_LSB      * FM_RADPS2KRPM);
-    p_msg->current[MOTOR_2]             = (int16_t)(p_foc->id                           / VELOCITY_LSB);
-    p_msg->coilRes[MOTOR_2]             = (uint16_t)(p_foc->uq                          / TENSION_LSB);
+    p_msg->current[MOTOR_2]             = (int16_t)(p_foc->iq                           / IQ_LSB);
+    p_msg->coilRes[MOTOR_2]             = (int16_t)(p_foc->uq                          / TENSION_LSB);
     p_msg->adcSamples[MOTOR_2]          = (int16_t)(p_foc->ud                           / TENSION_LSB);
-    p_msg->current[MOTOR_1]             = (int16_t)(p_foc->iq                           / IQ_LSB);
+    p_msg->current[MOTOR_1]             = (int16_t)(p_foc->id                           / IQ_LSB);
     
 
 #if 0

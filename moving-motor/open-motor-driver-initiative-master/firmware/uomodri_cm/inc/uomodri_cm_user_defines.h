@@ -158,7 +158,7 @@
  ************************************************************************/
 /*** Communication constants ***/
 #define POSITION_LSB                            (5.960464477539063e-08f)    // 2**(-24)
-#define VELOCITY_LSB                            (4.8828125e-04f)// 2**(-11) // Added rad/s to krpm conversion
+#define VELOCITY_LSB                            (4.8828125e-04f)            // 2**(-11) // Added rad/s to krpm conversion
 #define IQ_LSB                                  (9.765625e-04f)             // 2**(-10)
 #define CURRENT_SAT_LSB                         (1.25e-01f)                 // 2**(-3)
 #define RESISTANCE_LSB                          (3.0517578125e-05f)         // 2**(-15)
