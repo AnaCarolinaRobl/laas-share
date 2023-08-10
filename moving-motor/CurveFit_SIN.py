@@ -11,7 +11,7 @@ from scipy.optimize import curve_fit
 scaler = StandardScaler()
 
 # Nome do arquivo de texto
-filename = "rolling_data_sin_3A.txt"
+filename = "rolling_data_sin_6A.txt"
 
 def get_data(filename):
     # Matrix para armazenar os valores
