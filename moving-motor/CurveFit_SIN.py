@@ -92,7 +92,7 @@ x_data = [vqs_fit, velocitys_fit]
 y_data = iqs_fit
 params,_ = curve_fit(model_function, x_data, y_data)
 kv, k2 = params
-print(params)
+print("Kv = ", kv)
 
 y_estimed = []
 for i in range(len(iqs_fit)):
@@ -116,7 +116,7 @@ for i in range(len(iqs_fit)):
 # CURVE FIT TEMPERATURA = RESISTANCE*k1 + k2
 
 
-filename = "rolling_data_sin_increasing.txt"
+filename = "rolling_data_sin_6A.txt"
 times, ids, iqs, vds, vqs, velocitys, temps_measured, positions = get_data(filename)
 
 temps_fit = []
@@ -143,6 +143,16 @@ def calculate_resis(u, kv, v, i):
 
 resis = [calculate_resis(vqs[i], kv, velocitys[i], iqs[i]) for i in range(len(vqs))]
 resis_flt = LPF_FILTER(0.001, resis, resis[0])
+
+plt.plot(times_fit, velocitys, '.', label="velocitys")
+plt.plot(times_fit, iqs, '.', label="iqs")
+plt.plot(times_fit, vqs, '.', label="vqs")
+plt.plot(times_fit, resis, '.', label="resis")
+plt.title("Filename = " + filename)
+plt.xlabel('Time [s]')
+plt.ylabel('Resis')
+plt.legend()
+plt.show()
 
 plt.plot(times_fit, resis_flt, 'g.', label="Resistance Filter")
 plt.legend()

@@ -55,6 +55,8 @@ for i in range(len(ids)):
 
 temps_lstq = temps_lstq1
 
+
+
 ### data prepation
 # Limits estimated temperature between 0 or 200
 for i in range(len(temps_lstq)):
@@ -98,7 +100,7 @@ def HPF_FILTER(tau, xs):
         ys[i] = tau * (ys[i-1] + xs[i] - xs[i-1])
     return ys
 
-temps_lstq_flt = MEDIAN_FILTER(temps_lstq, 10)
+# temps_lstq_flt = MEDIAN_FILTER(temps_lstq, 10)
 
 
 
@@ -114,24 +116,6 @@ def complementaryFilter(arr_hp, arr_lp, tau_hp, tau_lp):
     # arr_filtered = MEDIAN_FILTER(arr_filtered, 10)
 
     return arr_filtered
-
-def complementaryFilterSimplified(tau):
-    K1 = 0.0102
-    K2 = 1/529
-    K3 = 1 # 45/25
-    temps_fusion=[T_AMBIENT]
-    for i in range(0, len(ids)-1):
-        delta_t = temps_fusion[-1] - T_AMBIENT
-        current = ids[i]*ids[i]#+iqs[i]*iqs[i]
-        temp_derivate = ((current * K1) - (delta_t * K2)) * K3
-        DT = times[i+1] - times[i]
-        temps_fusion.append(temps_fusion[-1] + ((temp_derivate) * DT * tau))
-
-        e = temps_fusion[-1] - temps_lstq[i+1]
-        trust = 1.0 - .004*1* (.01*(min(current, 100.0)))
-        temps_fusion[-1] = (temps_fusion[-1]-trust*.01*e)
-
-    return temps_fusion
 
 
 # calculate termique model
@@ -157,13 +141,6 @@ taus = np.linspace(0.1, 0.5, 2)
 temps_fusion = []
 #     plt.plot(times, temps_fusion, label=f"Tau = {tau}")
 
-# for tau in taus:
-
-# temps_fusion = complementaryFilterSimplified(tau)
-# temps_fusion_flt = MEDIAN_FILTER(temps_fusion, 5)
-
-
-
 
 tau = 0.01
 plt.plot(times, temps_measured, "b.", label="Measured Temperature")
@@ -172,7 +149,6 @@ plt.plot(times, LPF_FILTER(tau, temps_lstq), label="Resistance model with Low Pa
 plt.plot(times, complementaryFilter(temps_model, temps_lstq, 1-tau, tau), label=f"Complementary Filter tau_hp = {1-tau}, tau_lp = {tau}")
 plt.plot(times, complementaryFilterSimplified(1-tau), label=f"Complementary Filter Simplified tau_hp = {1-tau}, tau_lp = {tau}")
 
-
 plt.xlabel('Time [s]')
 plt.ylabel('Temperature [° Celsius]')
 
@@ -180,50 +156,5 @@ plt.ylabel('Temperature [° Celsius]')
 # errors = [temps_measured[i] - cf[i] for i in range(len(cf))]
 # plt.plot(times, errors, label=f"Error Complementary Filter tau_hp = {1-tau}, tau_lp = {tau}")
 
-
-# plt.plot(times, temps_fusion_flt, label=f"Tau = {tau} filtered")
-
-# plt.plot(times, temps_model, label=f"Thermal model")
-
-
-
-# FILTERS TESTS
-# plt.plot(times, HPF_FILTER(tau, temps_model), label= f"Thermal model with HPF and tau = {tau}")
-# plt.plot(times, LPF_FILTER(0.1, temps_lstq), label= f"Resistance model with LPF and tau = {tau}")
-
 plt.legend()
 plt.show()
-
-# axs[0].plot(times, temps_measured, 'g.', label="Measured Temperature")
-
-
-
-# error lists
-# errors_measured_fusion = [temps_measured[i] - temps_fusion[i]  for i in range(len(temps_measured))]
-
-
-# # Criando a figura e os subplots
-# fig, axs = plt.subplots(2, 1, figsize=(8, 6))
-
-# # Plotando o primeiro gráfico na posição (0, 0) da grade (em cima)
-# axs[0].plot(times, temps_measured, 'g.', label="Measured Temperature")
-# # axs[0].plot(times, temps_lstq, 'r.',label="Estimated Temperature with resistance model")
-# # axs[0].plot(times, temps_lstq_flt, 'y.', label=f"Estimated Temperature with resistance model and mean of {(LENGTH*2+1)} points")
-# # axs[0].plot(times, temps_fusion, 'r.', label="Temperature fusion")
-
-# ## Errors graphs
-# # axs[0].plot(times, errors_measured_fusion, 'b.', label="Error = Measured - Fusion Temperature")
-
-
-# axs[0].set_xlabel('Time [s]')
-# axs[0].set_ylabel('Temperature [° Celsius]')
-# axs[0].legend()
-# axs[0].grid()
-
-# # Plotando o segundo gráfico na posição (1, 0) da grade (embaixo)
-# axs[1].plot(times, iqs, 'b.')
-# axs[1].set_xlabel('Time [s]')
-# axs[1].set_ylabel('Current [A]')
-# # axs[1].legend()
-
-# plt.show()
