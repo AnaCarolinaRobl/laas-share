@@ -55,7 +55,7 @@ init_time = time.time()
 time_current = 0
 count = 0
 
-while now - init_time < 120 and temp_measured < 60:
+while now - init_time < 240 and temp_measured < 60:
     
     now = time.time()
     if now - init_time > 1:
