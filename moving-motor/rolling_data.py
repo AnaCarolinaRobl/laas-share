@@ -55,7 +55,7 @@ init_time = time.time()
 time_current = 0
 count = 0
 
-while now - init_time < 240 and temp_measured < 60:
+while now - init_time < 180 and temp_measured < 60:
     
     now = time.time()
     if now - init_time > 1:
@@ -69,24 +69,9 @@ while now - init_time < 240 and temp_measured < 60:
         error = ref-capture_position
         int_error += error*dt
 
-        # if (now - time_current > 0.2):
-        #     I = 4*((-1)**count) #np.sin(w*time_measured) #(error*kp) + ((derivate_ref-capture_velocity)*kd) + int_error*ki
-        #     time_current = time.time()
-        #     count+=1
         offset = (5+2) / 2
         amplitude = (5-2) / 2
         I = np.sin(w*time_measured) * ( np.sin(w/10*time_measured)*amplitude + offset)
-
-        # if (now - init_time < 10):
-        #     I = np.sin(w*time_measured) 
-        # elif (now - init_time > 10 and now - init_time < 20):
-        #     I = np.sin(w*time_measured) * 2
-        # elif (now - init_time > 20 and now - init_time < 30):
-        #     I = np.sin(w*time_measured) * 3
-        # elif (now - init_time > 30 and now - init_time < 40):
-        #     I = np.sin(w*time_measured) * 4
-        # elif (now - init_time > 40 and now - init_time < 50):
-        #     I = np.sin(w*time_measured) * 5
 
         # set current format 
         ud.refCurrent1 = I # Iq
