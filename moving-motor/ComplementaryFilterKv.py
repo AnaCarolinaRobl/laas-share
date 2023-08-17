@@ -33,7 +33,7 @@ vqs = vqs_temp.copy()
 iqs = iqs_temp.copy()
 ids = iqs_temp.copy()
 
-kv = 0.0178
+kv = 0.01818
 def calculate_resis(u, kv, v, i):
     return (u - kv*v)/i
 
@@ -41,7 +41,6 @@ resis = [calculate_resis(vqs[i], kv, velocitys[i], iqs[i]) for i in range(len(vq
 resis = LPF_FILTER(0.001, resis)
 
 
-velocitys = velocitys/150
 velocitys = [abs(velocitys[i]) for i in range(len(velocitys))]
 velocitys = LPF_FILTER(0.001, velocitys)
 
@@ -184,11 +183,9 @@ for filename in filenames:
     ids_temp = []
     velocitys_temp = []
 
-    KI = 0.2
-
     for i in range(len(vqs)):
         if i > TIME1*8 and abs(iqs[i]) > 2.5:
-            current.append(iqs[i]*KI)
+            current.append(iqs[i])
             temps_fit.append(temps_measured[i])
             times_fit.append(times[i])
             vqs_temp.append(vqs[i])
@@ -202,12 +199,10 @@ for filename in filenames:
     ids = iqs_temp.copy()
 
 
-
     resis = [calculate_resis(vqs[i], kv, velocitys[i], iqs[i]) for i in range(len(vqs))]
     resis = LPF_FILTER(0.001, resis)
 
 
-    velocitys = velocitys/150
     velocitys = [abs(velocitys[i]) for i in range(len(velocitys))]
     velocitys = LPF_FILTER(0.001, velocitys)
 

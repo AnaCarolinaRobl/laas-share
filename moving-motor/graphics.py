@@ -2,7 +2,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Nome do arquivo de texto
-nome_arquivo = "rolling_data_squared_stop.txt"
+nome_arquivo = "data/" + "rolling_data_SBPA.txt"
+# problematicos: rolling_data_sin_increasing_stopped(comeco com erro > 15), rolling_data_sin_3A,(erro por volta de 13), rolling_data_sin_increasing(inicio com erro grande)
+
+# problems
+# current between 2 and 3 A, on a erreur de 15 degrees
+#
 
 # Listas para armazenar os valores
 times = []
@@ -38,7 +43,7 @@ with open(nome_arquivo, "r") as arquivo:
 TIME1 = -1
 
 for i in range(len(iqs)):
-    if abs(iqs[i]) < 1.9:
+    if abs(iqs[i]) < 1.7:
         iqs[i] = 0
 
 
@@ -48,7 +53,7 @@ fig, axs = plt.subplots(2, 2, figsize=(10, 8))
 # Plot dos gráficos em cada subplot
 axs[0, 0].plot(times[:TIME1], ids[:TIME1], 'g.', label="Id")
 axs[0, 0].plot(times[:TIME1], iqs[:TIME1], 'r.',label="Iq")
-axs[0, 0].set_title('Measured Currents')
+axs[0, 0].set_title('Measured Currents of ' + nome_arquivo)
 axs[0, 0].set_xlabel('Time [s]')
 axs[0, 0].set_ylabel('Current [A]')
 axs[0, 0].legend()

@@ -135,8 +135,6 @@ def thermal_model():
 
 temps_model = thermal_model()
 # temps_fusion = fusion_model()
-
-
 taus = np.linspace(0.1, 0.5, 2)
 temps_fusion = []
 #     plt.plot(times, temps_fusion, label=f"Tau = {tau}")
