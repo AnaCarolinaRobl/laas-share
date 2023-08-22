@@ -22,7 +22,10 @@ txt_files = get_matching_txt_files(folder_path, prefix)
 
 times_raw, ids_raw, iqs_raw, vds_raw, vqs_raw, velocitys_raw, temps_measured_raw, positions_raw = [], [], [], [], [], [], [], []
 
-filenames = ["rolling_data_Sin_sampled.txt", "rolling_data_sin_increasing_stopped.txt", "rolling_data_squared_stop.txt", "rolling_data_sin_sin_stopped.txt"]
+# filenames = ["rolling_data_SBPA.txt", "rolling_data_sin_sin.txt", "rolling_data_sin_increasing_stopped.txt"]
+# filenames = ["rolling_data_Sin_sampled.txt", "rolling_data_sin_increasing_stopped.txt"]
+# filenames = ["rolling_data_Sin_sampled.txt", "rolling_data_sin_increasing_stopped.txt", "rolling_data_squared_stop.txt", "rolling_data_sin_sin_stopped.txt"]
+filenames = ["rolling_data_PID2.txt"]
 
 # problematicos: rolling_data_sin_increasing_stopped(comeco com erro > 15), rolling_data_sin_3A,(erro por volta de 13), rolling_data_sin_increasing(inicio com erro grande)
 
@@ -39,115 +42,141 @@ for filename in filenames:
     positions_raw += positions_temp
 
 
+
+
+CURRENT_LIMITS = np.linspace(0.7, 2, 70)
+RS = []
+best_cl = 0
+best_r = 0
+
 CURRENT_LIMIT = 1.6
-# CURRENT_LIMIT = 1.95
-# CURRENT_LIMIT = 1.2
+CURRENT_LIMIT = 1.95
+CURRENT_LIMIT = 1.2
 
-resis = []
-inv_current = []
-temps_fit = []
-times_fit = []
-vqs = []
-iqs = []
-velocitys = []
+for CURRENT_LIMIT in CURRENT_LIMITS:
 
-for i in range(len(vqs_raw)):
-    if times_raw[i] > 8 and abs(iqs_raw[i]) > CURRENT_LIMIT:
-        inv_current.append(1/iqs_raw[i])
-        temps_fit.append(temps_measured_raw[i])
-        times_fit.append(times_raw[i])
-        vqs.append(vqs_raw[i])
-        iqs.append(iqs_raw[i])
-        velocitys.append(velocitys_raw[i])
+    resis = []
+    inv_current = []
+    temps_fit = []
+    times_fit = []
+    vqs = []
+    iqs = []
+    velocitys = []
 
-kv = 0.01818
-# kv = 0.01758
-def calculate_resis(u, kv, v, i):
-    return (u - kv*v)/i
+    for i in range(len(vqs_raw)):
+        if times_raw[i] > 8 and abs(iqs_raw[i]) > CURRENT_LIMIT:
+            inv_current.append(1/iqs_raw[i])
+            temps_fit.append(temps_measured_raw[i])
+            times_fit.append(times_raw[i])
+            vqs.append(vqs_raw[i])
+            iqs.append(iqs_raw[i])
+            velocitys.append(velocitys_raw[i])
 
-resis = [calculate_resis(vqs[i], kv, velocitys[i], iqs[i]) for i in range(len(vqs))]
-resis = LPF_FILTER(0.001, resis)
+    kv = 0.01818
+    # kv = 0.01758
+    def calculate_resis(u, kv, v, i):
+        return (u - kv*v)/i
 
-
-# Normalization 
-factor_inv_current = 2
-factor_velocity = 1/150
-
-for i in range(len(inv_current)):
-    velocitys[i] = velocitys[i]*factor_velocity
-    inv_current[i] = inv_current[i]*factor_inv_current
+    resis = [calculate_resis(vqs[i], kv, velocitys[i], iqs[i]) for i in range(len(vqs))]
+    resis = LPF_FILTER(0.001, resis)
 
 
-velocitys = [abs(velocitys[i]) for i in range(len(velocitys))]
-velocitys = LPF_FILTER(0.001, velocitys)
+    # Normalization 
+    factor_inv_current = 2
+    factor_velocity = 1/150
 
-inv_current = [abs(inv_current[i]) for i in range(len(inv_current))]
-# inv_current = LPF_FILTER(0.001, inv_current)
-
-vqs = [abs(vqs[i]) for i in range(len(vqs))]
-vqs = LPF_FILTER(0.001, vqs)
+    for i in range(len(inv_current)):
+        velocitys[i] = velocitys[i]*factor_velocity
+        inv_current[i] = inv_current[i]*factor_inv_current
 
 
-# plt.plot(times_fit, resis, ".")
-# plt.title("resistencia")
-# plt.show()
+    velocitys = [abs(velocitys[i]) for i in range(len(velocitys))]
+    velocitys = LPF_FILTER(0.001, velocitys)
 
-# Criando um DataFrame com as duas colunas
-x = pd.DataFrame({'resistance': resis, 'inv_current': inv_current, 'velocitys': velocitys})
-# x = pd.DataFrame({'resistance': resis, 'velocitys': velocitys})
+    inv_current = [abs(inv_current[i]) for i in range(len(inv_current))]
+    inv_current = LPF_FILTER(0.001, inv_current)
 
-plt.plot(times_fit, resis, '.', label="resis")
-plt.plot(times_fit, inv_current, '.',label="inv_current")
-plt.plot(times_fit, velocitys, '.',label="velocitys")
-plt.title("Filename = " + filename)
-plt.xlabel('Time [s]')
-plt.ylabel('Temperature [° Celsius]')
-plt.legend()
+    vqs = [abs(vqs[i]) for i in range(len(vqs))]
+    vqs = LPF_FILTER(0.001, vqs)
+
+
+    # plt.plot(times_fit, resis, ".")
+    # plt.title("resistencia")
+    # plt.show()
+
+    # Criando um DataFrame com as duas colunas
+    x = pd.DataFrame({'resistance': resis, 'inv_current': inv_current, 'velocitys': velocitys})
+    # x = pd.DataFrame({'resistance': resis, 'velocitys': velocitys})
+
+    # plt.plot(times_fit, resis, '.', label="resis")
+    # plt.plot(times_fit, vqs, '.',label="vqs")
+    # # plt.plot(times_fit, inv_current, '.',label="inv_current")
+    # plt.plot(times_fit, velocitys, '.',label="velocitys")
+    # plt.title("Filename = " + filename)
+    # plt.xlabel('Time [s]')
+    # plt.ylabel('Temperature [° Celsius]')
+    # plt.legend()
+    # plt.show()
+
+
+
+    # fig, axs = plt.subplots(2, 1, figsize=(8, 6))
+
+    # # Plotando o primeiro gráfico na posição (0, 0) da grade (em cima)
+    # axs[0].plot(times_fit, velocitys, '.',label="velocitys")
+    # axs[0].plot(times_fit, inv_current, '.',label="inv_current")
+    # axs[0].plot(times_fit, vqs, '.',label="vqs")
+
+    # axs[0].set_xlabel('Time [s]')
+    # axs[0].legend()
+    # axs[0].grid()
+
+    # # Plotando o segundo gráfico na posição (1, 0) da grade (embaixo)
+    # axs[1].plot(times_fit, resis, '.', label="(U - kv*w) / i [Volt / Ampere]")
+    # axs[1].set_xlabel('Time [s]')
+    # axs[1].legend()
+
+    # plt.show()
+
+
+    x = sm.add_constant(x)
+    y = temps_fit
+
+    model = sm.OLS(y, x).fit()
+    resultados_regressao = []
+
+    resultados_regressao.append({
+        'Arquivo': filename,
+        'R²': model.rsquared,
+        'Coeficientes': model.params,
+        'P-Valores': model.pvalues
+    })
+
+    # Exibindo os resultados
+    for resultado in resultados_regressao:
+        print("Arquivo:", resultado['Arquivo'])
+        print("R²:", resultado['R²'])
+        print("Coeficientes:")
+        print(resultado['Coeficientes'])
+        print("P-Valores:")
+        print(resultado['P-Valores'])
+        print("="*50)
+    
+    r = resultado['R²']
+    RS.append(r)
+    print(CURRENT_LIMIT, r)
+
+    if r > best_r:
+        best_r = r
+        best_cl = CURRENT_LIMIT
+
+
+
+plt.plot(CURRENT_LIMITS, RS, ".")
+plt.title("Current limit [A] x R²")
+plt.xlabel('Current [A]')
+plt.ylabel('R²')
 plt.show()
-
-
-
-# fig, axs = plt.subplots(2, 1, figsize=(8, 6))
-
-# # Plotando o primeiro gráfico na posição (0, 0) da grade (em cima)
-# axs[0].plot(times_fit, velocitys, '.',label="velocitys")
-# axs[0].plot(times_fit, inv_current, '.',label="inv_current")
-# axs[0].plot(times_fit, vqs, '.',label="vqs")
-
-# axs[0].set_xlabel('Time [s]')
-# axs[0].legend()
-# axs[0].grid()
-
-# # Plotando o segundo gráfico na posição (1, 0) da grade (embaixo)
-# axs[1].plot(times_fit, resis, '.', label="(U - kv*w) / i [Volt / Ampere]")
-# axs[1].set_xlabel('Time [s]')
-# axs[1].legend()
-
-# plt.show()
-
-
-x = sm.add_constant(x)
-y = temps_fit
-
-model = sm.OLS(y, x).fit()
-resultados_regressao = []
-
-resultados_regressao.append({
-    'Arquivo': filename,
-    'R²': model.rsquared,
-    'Coeficientes': model.params,
-    'P-Valores': model.pvalues
-})
-
-# Exibindo os resultados
-for resultado in resultados_regressao:
-    print("Arquivo:", resultado['Arquivo'])
-    print("R²:", resultado['R²'])
-    print("Coeficientes:")
-    print(resultado['Coeficientes'])
-    print("P-Valores:")
-    print(resultado['P-Valores'])
-    print("="*50)
 
 k1 = model.params["resistance"]
 k2 = model.params["inv_current"]
@@ -173,16 +202,13 @@ for i in range(len(resis)):
 
 
 ## ******************************************* ##
-
-
-
-filenames = ["rolling_data_PID2.txt"] 
-filenames = ["rolling_data_sin_sin_stopped.txt"] 
+# "rolling_data_sin_increasing_stopped.txt"
+# filenames = ["rolling_data_sin_increasing.txt", "rolling_data_PID.txt", "rolling_data_Sin_sampled.txt", "rolling_data_PID2.txt", "rolling_data_SBPA.txt"] 
 # filenames = txt_files
 
 
-k2 = k2 * factor_inv_current
-k3 = k3 * factor_velocity
+k2 = k2 * 2
+k3 = k3 / 150
 print("Modelo com parametros ajustados")
 print(f"t = {round(k1)}*(u - kv*w)/i + {round(k2)}*i {round(k3, 3)}*w {round(k4)}")
 
@@ -247,15 +273,12 @@ for filename in filenames:
 
     axs[0].set_xlabel('Time [s]')
     axs[0].set_ylabel('Temperature [° Celsius]')
-    axs[0].set_title(f"Filename = {filename[13:]}, current limit = {CURRENT_LIMIT} and R^2 = {round(resultado['R²'], 2)}")
+    axs[0].set_title(f"Filename = {filename[12:]}, current limit = {CURRENT_LIMIT} and R^2 = {round(resultado['R²'], 2)}")
     axs[0].legend()
     axs[0].grid()
 
     # axs[1].plot(times, iqs_raw, 'r.')
-    # axs[1].plot(times_fit, iqs, 'r.')
-    axs[1].plot(times_fit, inv_current, '.', label="inv_current")
-    # axs[1].plot(times_fit, velocitys, '.', label="velocitys")
-    axs[1].legend()
+    axs[1].plot(times_fit, iqs, 'r.')
     axs[1].set_xlabel('Time [s]')
     axs[1].set_ylabel('Current [Ampere]')
 

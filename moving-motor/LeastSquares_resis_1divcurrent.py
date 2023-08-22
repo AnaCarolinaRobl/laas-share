@@ -5,19 +5,10 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 from scipy.optimize import curve_fit
 
-import os
+from utils import get_matching_txt_files, get_data, LPF_FILTER
 
-def get_matching_txt_files(folder_path, prefix):
-    matching_files = []
-    for filename in os.listdir(folder_path):
-        if filename.startswith(prefix) and filename.endswith(".txt"):
-            matching_files.append(filename)
-    return matching_files
 
-folder_path = "./data/"  # Substitua pelo caminho da sua pasta
-prefix = "rolling_data"
-
-txt_files = get_matching_txt_files(folder_path, prefix)
+txt_files = get_matching_txt_files()
 
 def get_data(filename):
     # Matrix para armazenar os valores
@@ -46,7 +37,10 @@ def LPF_FILTER(flt_coef, ys, initial_value):
 
 times, ids, iqs, vds, vqs, velocitys, temps_measured, positions = [], [], [], [], [], [], [], []
 
+# filenames = ["rolling_data_SBPA.txt", "rolling_data_sin_sin.txt", "rolling_data_sin_increasing_stopped.txt"]
+filenames = ["rolling_data_Sin_sampled.txt", "rolling_data_sin_increasing_stopped.txt"]
 filenames = ["rolling_data_Sin_sampled.txt", "rolling_data_sin_increasing_stopped.txt", "rolling_data_squared_stop.txt", "rolling_data_sin_sin_stopped.txt"]
+# filenames = ["rolling_data_sin_sin_stopped.txt"]
 # filenames = txt_files
 
 # problematicos: rolling_data_sin_increasing_stopped(comeco com erro > 15), rolling_data_sin_3A,(erro por volta de 13), rolling_data_sin_increasing(inicio com erro grande)
@@ -122,8 +116,8 @@ plt.title("resistencia")
 plt.show()
 
 # Criando um DataFrame com as duas colunas
-x = pd.DataFrame({'resistance': resis, 'inv_current': inv_current, 'velocitys': velocitys})
-# x = pd.DataFrame({'resistance': resis, 'velocitys': velocitys})
+# x = pd.DataFrame({'resistance': resis, 'inv_current': inv_current, 'velocitys': velocitys})
+x = pd.DataFrame({'resistance': resis, 'inv_current': inv_current})
 
 # plt.plot(times_fit, resis, '.', label="resis")
 # plt.plot(times_fit, vqs, '.',label="vqs")
@@ -137,22 +131,22 @@ x = pd.DataFrame({'resistance': resis, 'inv_current': inv_current, 'velocitys': 
 
 
 
-fig, axs = plt.subplots(2, 1, figsize=(8, 6))
+# fig, axs = plt.subplots(2, 1, figsize=(8, 6))
 
-# Plotando o primeiro gráfico na posição (0, 0) da grade (em cima)
-axs[0].plot(times_fit, velocitys, '.',label="velocitys")
-axs[0].plot(times_fit, vqs, '.',label="vqs")
+# # Plotando o primeiro gráfico na posição (0, 0) da grade (em cima)
+# axs[0].plot(times_fit, velocitys, '.',label="velocitys")
+# axs[0].plot(times_fit, vqs, '.',label="vqs")
 
-axs[0].set_xlabel('Time [s]')
-axs[0].legend()
-axs[0].grid()
+# axs[0].set_xlabel('Time [s]')
+# axs[0].legend()
+# axs[0].grid()
 
-# Plotando o segundo gráfico na posição (1, 0) da grade (embaixo)
-axs[1].plot(times_fit, resis, '.', label="(U - kv*w) / i [Volt / Ampere]")
-axs[1].set_xlabel('Time [s]')
-axs[1].legend()
+# # Plotando o segundo gráfico na posição (1, 0) da grade (embaixo)
+# axs[1].plot(times_fit, resis, '.', label="(U - kv*w) / i [Volt / Ampere]")
+# axs[1].set_xlabel('Time [s]')
+# axs[1].legend()
 
-plt.show()
+# plt.show()
 
 
 x = sm.add_constant(x)
@@ -181,15 +175,13 @@ for resultado in resultados_regressao:
 
 k1 = model.params["resistance"]
 k2 = model.params["inv_current"]
-k3 = model.params["velocitys"]
-k4 = model.params["const"]
-print(f"t = {round(k1)}*(u - kv*w)/i + {round(k2,1)}*i {round(k3, 1)}*w {round(k4)}")
+k3 = model.params["const"]
+print(f"t = {round(k1)}*(u - kv*w)/i + {round(k2,1)}*i {round(k3)}")
 
 
 temps_lstq = []
 for i in range(len(resis)):
-    temp_lstq = k1*resis[i] + k2*inv_current[i] + k3*velocitys[i] + k4
-    # temp_lstq = k1*resis[i] + k3*velocitys[i] + k4
+    temp_lstq = k1*resis[i] + k2*inv_current[i] + k3
     temps_lstq.append(temp_lstq)
 
 
@@ -210,9 +202,10 @@ filenames = ["rolling_data_SBPA.txt", "rolling_data_PID.txt", "rolling_data_sin_
 
 print("Modelo com parametros ajustados")
 k2 = k2 * 2
-k3 = k3 / 150
+# k3 = k3 / 150
 
-print(f"t = {round(k1)}*(u - kv*w)/i + {round(k2)}/i {round(k3, 3)}*w {round(k4)}")
+print(f"t = {round(k1)}*(u - kv*w)/i + {round(k2)}/i{round(k3)}")
+print(f"Modelo separado : t = {round(k1)}*(u/i) {k1*kv}(w/i) + {round(k2)}/i{round(k3)}")
 
 for filename in filenames:
     times, ids, iqs, vds, vqs, velocitys, temps_measured, positions = get_data(filename)
@@ -250,7 +243,7 @@ for filename in filenames:
 
     temps_lstq = []
     for i in range(len(resis)):
-        temp_lstq = k1*resis[i] + k2*inv_current[i] + k3*velocitys[i] + k4
+        temp_lstq = k1*resis[i] + k2*inv_current[i] + k3
         temps_lstq.append(temp_lstq)
 
 
