@@ -2,8 +2,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Nome do arquivo de texto
-nome_arquivo = "data/" + "rolling_data_SBPA.txt"
+nome_arquivo = "data/" + "rolling_data_sin_sin_stopped.txt"
 # problematicos: rolling_data_sin_increasing_stopped(comeco com erro > 15), rolling_data_sin_3A,(erro por volta de 13), rolling_data_sin_increasing(inicio com erro grande)
+filenames = ["rolling_data_Sin_sampled.txt", "rolling_data_sin_increasing_stopped.txt", "rolling_data_squared_stop.txt", "rolling_data_sin_sin_stopped.txt"]
 
 # problems
 # current between 2 and 3 A, on a erreur de 15 degrees

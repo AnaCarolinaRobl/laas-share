@@ -46,10 +46,7 @@ def LPF_FILTER(flt_coef, ys, initial_value):
 
 times, ids, iqs, vds, vqs, velocitys, temps_measured, positions = [], [], [], [], [], [], [], []
 
-# filenames = ["rolling_data_SBPA.txt", "rolling_data_sin_sin.txt", "rolling_data_sin_increasing_stopped.txt"]
-filenames = ["rolling_data_Sin_sampled.txt", "rolling_data_sin_increasing_stopped.txt"]
 filenames = ["rolling_data_Sin_sampled.txt", "rolling_data_sin_increasing_stopped.txt", "rolling_data_squared_stop.txt", "rolling_data_sin_sin_stopped.txt"]
-# filenames = ["rolling_data_sin_sin_stopped.txt"]
 # filenames = txt_files
 
 # problematicos: rolling_data_sin_increasing_stopped(comeco com erro > 15), rolling_data_sin_3A,(erro por volta de 13), rolling_data_sin_increasing(inicio com erro grande)
@@ -215,7 +212,7 @@ print("Modelo com parametros ajustados")
 k2 = k2 * 2
 k3 = k3 / 150
 
-print(f"t = {round(k1)}*(u - kv*w)/i + {round(k2)}*i {round(k3, 3)}*w {round(k4)}")
+print(f"t = {round(k1)}*(u - kv*w)/i + {round(k2)}/i {round(k3, 3)}*w {round(k4)}")
 
 for filename in filenames:
     times, ids, iqs, vds, vqs, velocitys, temps_measured, positions = get_data(filename)

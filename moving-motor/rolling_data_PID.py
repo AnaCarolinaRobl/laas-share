@@ -60,7 +60,7 @@ while now - init_time < 240 and temp_measured < 60:
     if now - init_time > 1:
 
         time_measured = now - init_time
-        ref = 1 # np.sin(w*time_measured)*2*np.pi #valor a enviar para a velocidade
+        ref = 0 # np.sin(w*time_measured)*2*np.pi #valor a enviar para a velocidade
         derivate_ref        = 0 # w*np.cos(w*time_measured)
         capture_velocity    = ud.velocity1
         capture_position    = ud.position1
@@ -72,7 +72,7 @@ while now - init_time < 240 and temp_measured < 60:
 
         # set current format 
         ud.refCurrent1 = I # Iq
-        print("I=",round(I,2), "Iq=",round(iq,2),"Temperature:",round(temp_measured, 1), "Time: ", round(now - init_time), "Error: ", ud.error )
+        print("I=",round(I,2), "Iq=",round(iq,2),"Temperature:",round(temp_measured, 1), "Time: ", round(now - init_time), "Error: ",   error )
         ud.transfer() # transfer
         # get data
         temp_measured = st.read()

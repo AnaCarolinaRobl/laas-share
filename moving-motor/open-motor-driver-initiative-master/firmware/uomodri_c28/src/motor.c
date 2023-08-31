@@ -141,8 +141,8 @@ inline bool_t MOT_runControl(motor_t* p_motor)
         break;
     case MOTOR_STATE_READY_GET_CUR:
         p_motor->itCnt         += 1U;
-        p_foc->idRef            = 0.0f;    //p_motor->p_motorFOC->motor_cmd.velRef;
-        p_foc->iqRef            = FOC_runPD(&p_foc->pdPosVel);
+        p_foc->idRef            = FOC_runPD(&p_foc->pdPosVel);//0;  //p_motor->p_motorFOC->motor_cmd.velRef;
+        p_foc->iqRef            = 0;//FOC_runPD(&p_foc->pdPosVel);
         p_motor->motor_state    = (en_bit.motorEnable)              ? (MOTOR_STATE_READY_GET_CUR)       : (MOTOR_STATE_STOP);
         p_motor->motor_state    = (en_bit.systemEnable)             ? (p_motor->motor_state)            : (MOTOR_STATE_INIT);
         FOC_runControl(p_foc);

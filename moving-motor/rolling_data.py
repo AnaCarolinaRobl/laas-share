@@ -40,7 +40,6 @@ start_time = False
 warming = True
 
 I=0
-count=0
 kd= 0 # 10**(-4)*2
 kp=2/9
 ki = 0
@@ -52,10 +51,16 @@ iq = 0
 vq = 0
 temp_measured = 0
 init_time = time.time()
-time_current = 0
+time_current = time.time()
+time_temperature = time.time()
 count = 0
+count_courrent = 0
+temp_5s = 100
 
-while now - init_time < 180 and temp_measured < 60:
+temp_coef_flt = 0.001
+temp_measured_flt = st.read()
+
+while temp_measured_flt < 60:  #now - init_time < 180
     
     now = time.time()
     if now - init_time > 1:
@@ -69,16 +74,39 @@ while now - init_time < 180 and temp_measured < 60:
         error = ref-capture_position
         int_error += error*dt
 
-        offset = (5+2) / 2
-        amplitude = (5-2) / 2
-        I = np.sin(w*time_measured) * ( np.sin(w/10*time_measured)*amplitude + offset)
+        # offset = (5+2) / 2
+        # amplitude = (5-2) / 2
+        # I = np.sin(w*time_measured) * ( np.sin(w/10*time_measured)*amplitude + offset)
+
+        if now-time_temperature > 20:
+            if abs(temp_5s-temp_measured_flt)<=0.1:
+                break
+            time_temperature = time.time()
+            temp_5s = temp_measured_flt
+
+        #get data
+        temp_measured = st.read()
+        temp_measured_flt = temp_measured_flt + temp_coef_flt*(temp_measured - temp_measured_flt)
+
+        if(temp_measured<46 and count == 0):
+            if now-time_current > 0.2:
+                time_current = time.time()
+                I = 4*((-1)**(count_courrent))
+                count_courrent += 1
+                ud.refCurrent1 = I  # Iq
+        else:
+            count = 1
+            if now-time_current > 0.3:
+                time_current = time.time()
+                I = 2*((-1)**(count_courrent))
+                count_courrent += 1
+                ud.refCurrent1 = I  # Iq
 
         # set current format 
         ud.refCurrent1 = I # Iq
-        print("I=",round(I,2), "Iq=",round(iq,2),"Temperature:",round(temp_measured, 1), "Time: ", round(now - init_time), "Error: ", ud.error )
+        print("Temperature:",round(temp_measured, 1), "Time: ", round(now - init_time), "temp_5s: ", temp_5s )
         ud.transfer() # transfer
         # get data
-        temp_measured = st.read()
         iq = ud.current1
         id = ud.current0
         vd = ud.adcSamples1
@@ -108,7 +136,7 @@ ud.stop() # Terminate
 
 
 # Save data in file
-f = open("rolling_data.txt", "w")
+f = open("rolling_data_stable_temp.txt", "w")
 f.write("Time, Id, Iq, Ud, Uq, Velocity, Temperature, Position\n")
 
 for i in range(len(times)):

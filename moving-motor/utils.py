@@ -1,3 +1,5 @@
+import os
+
 def get_data(filename):
     # Matrix para armazenar os valores
     datas = [[] for i in range(8)]
@@ -58,11 +60,40 @@ def fusion_model(temps_lstq, times, ids, iqs):
 
         e = temps_fusion[-1] - temps_lstq[i+1]
         # trust = 1.0 - .004*1* (.01*(min(current, 100.0)))
-        if abs(iqs[i])  < 3.5:
+        if abs(iqs[i])  < 3:
             trust = 0.001
-            print(trust, times[i], iqs[i], abs(ids[i]) )
         else:
             trust = 1
         temps_fusion[-1] = (temps_fusion[-1]-trust*.01*e)
 
     return temps_fusion
+
+# calculate termique model
+def thermal_model(times, iqs, ids, K1= 0.0102, K2=1/529,T_AMBIENT = 25 ):
+    temps_model = [T_AMBIENT]
+    for i in range(0, len(ids)-1):
+        delta_t = temps_model[-1] - T_AMBIENT
+        current = ids[i]*ids[i] + iqs[i]*iqs[i]
+        temp_derivate = ((current * K1) - (delta_t * K2)) 
+        DT = times[i+1] - times[i]
+        temps_model.append(temps_model[-1] + ((temp_derivate) * DT))
+    return temps_model
+
+def complementaryFilter(arr_hp, arr_lp, tau_hp, tau_lp):
+    arr_hp = HPF_FILTER(tau_hp, arr_hp)
+    arr_lp = LPF_FILTER(tau_lp, arr_lp)
+    
+    arr_filtered = []
+    for i in range(len(arr_hp)):
+        arr_filtered.append(arr_hp[i] + arr_lp[i])
+
+    return arr_filtered
+
+def get_matching_txt_files():
+    folder_path = "./data/"  # Substitua pelo caminho da sua pasta
+    prefix = "rolling_data"
+    matching_files = []
+    for filename in os.listdir(folder_path):
+        if filename.startswith(prefix) and filename.endswith(".txt"):
+            matching_files.append(filename)
+    return matching_files

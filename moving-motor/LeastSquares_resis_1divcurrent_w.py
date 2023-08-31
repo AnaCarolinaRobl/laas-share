@@ -4,7 +4,7 @@ import statsmodels.api as sm
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from scipy.optimize import curve_fit
-from utils import get_data, LPF_FILTER, HPF_FILTER, complementaryFilter, fusion_model
+from utils import get_data, LPF_FILTER, HPF_FILTER, complementaryFilter, fusion_model, thermal_model
 
 import os
 
@@ -20,51 +20,45 @@ prefix = "rolling_data"
 
 txt_files = get_matching_txt_files(folder_path, prefix)
 
-times, ids, iqs, vds, vqs, velocitys, temps_measured, positions = [], [], [], [], [], [], [], []
+times_raw, ids_raw, iqs_raw, vds_raw, vqs_raw, velocitys_raw, temps_measured_raw, positions_raw = [], [], [], [], [], [], [], []
 
-# filenames = ["rolling_data_SBPA.txt", "rolling_data_sin_sin.txt", "rolling_data_sin_increasing_stopped.txt"]
-# filenames = ["rolling_data_Sin_sampled.txt", "rolling_data_sin_increasing_stopped.txt"]
 filenames = ["rolling_data_Sin_sampled.txt", "rolling_data_sin_increasing_stopped.txt", "rolling_data_squared_stop.txt", "rolling_data_sin_sin_stopped.txt"]
-# filenames = ["rolling_data_sin_sin_stopped.txt"]
 
 # problematicos: rolling_data_sin_increasing_stopped(comeco com erro > 15), rolling_data_sin_3A,(erro por volta de 13), rolling_data_sin_increasing(inicio com erro grande)
 
 for filename in filenames:
     times_temp, ids_temp, iqs_temp, vds_temp, vqs_temp, velocitys_temp, temps_measured_temp, positions_temp = get_data(filename)
 
-    times += times_temp
-    ids += ids_temp
-    iqs += iqs_temp
-    vds += vds_temp
-    vqs += vqs_temp
-    velocitys += velocitys_temp
-    temps_measured += temps_measured_temp
-    positions += positions_temp
+    times_raw += times_temp
+    ids_raw += ids_temp
+    iqs_raw += iqs_temp
+    vds_raw += vds_temp
+    vqs_raw += vqs_temp
+    velocitys_raw += velocitys_temp
+    temps_measured_raw += temps_measured_temp
+    positions_raw += positions_temp
 
+
+CURRENT_LIMIT = 1.6
+# CURRENT_LIMIT = 1.95
+# CURRENT_LIMIT = 1.2
 
 resis = []
 inv_current = []
 temps_fit = []
 times_fit = []
-vqs_temp = []
-iqs_temp = []
-velocitys_temp = []
+vqs = []
+iqs = []
+velocitys = []
 
-CURRENT_LIMIT = 1.7
-
-for i in range(len(vqs)):
-    if times[i] > 8 and abs(iqs[i]) > CURRENT_LIMIT:
-        inv_current.append(1/iqs[i])
-        temps_fit.append(temps_measured[i])
-        times_fit.append(times[i])
-        vqs_temp.append(vqs[i])
-        iqs_temp.append(iqs[i])
-        velocitys_temp.append(velocitys[i])
-
-velocitys = np.array(velocitys_temp.copy())
-vqs = vqs_temp.copy()
-iqs = iqs_temp.copy()
-
+for i in range(len(vqs_raw)):
+    if times_raw[i] > 8 and abs(iqs_raw[i]) > CURRENT_LIMIT:
+        inv_current.append(1/iqs_raw[i])
+        temps_fit.append(temps_measured_raw[i])
+        times_fit.append(times_raw[i])
+        vqs.append(vqs_raw[i])
+        iqs.append(iqs_raw[i])
+        velocitys.append(velocitys_raw[i])
 
 kv = 0.01818
 # kv = 0.01758
@@ -88,7 +82,7 @@ velocitys = [abs(velocitys[i]) for i in range(len(velocitys))]
 velocitys = LPF_FILTER(0.001, velocitys)
 
 inv_current = [abs(inv_current[i]) for i in range(len(inv_current))]
-inv_current = LPF_FILTER(0.001, inv_current)
+# inv_current = LPF_FILTER(0.001, inv_current)
 
 vqs = [abs(vqs[i]) for i in range(len(vqs))]
 vqs = LPF_FILTER(0.001, vqs)
@@ -102,15 +96,14 @@ vqs = LPF_FILTER(0.001, vqs)
 x = pd.DataFrame({'resistance': resis, 'inv_current': inv_current, 'velocitys': velocitys})
 # x = pd.DataFrame({'resistance': resis, 'velocitys': velocitys})
 
-# plt.plot(times_fit, resis, '.', label="resis")
-# plt.plot(times_fit, vqs, '.',label="vqs")
-# # plt.plot(times_fit, inv_current, '.',label="inv_current")
-# plt.plot(times_fit, velocitys, '.',label="velocitys")
-# plt.title("Filename = " + filename)
-# plt.xlabel('Time [s]')
-# plt.ylabel('Temperature [° Celsius]')
-# plt.legend()
-# plt.show()
+plt.plot(times_fit, resis, '.', label="resis")
+plt.plot(times_fit, inv_current, '.',label="inv_current")
+plt.plot(times_fit, velocitys, '.',label="velocitys")
+plt.title("Filename = " + filename)
+plt.xlabel('Time [s]')
+plt.ylabel('Temperature [° Celsius]')
+plt.legend()
+plt.show()
 
 
 
@@ -156,7 +149,6 @@ for resultado in resultados_regressao:
     print(resultado['P-Valores'])
     print("="*50)
 
-
 k1 = model.params["resistance"]
 k2 = model.params["inv_current"]
 k3 = model.params["velocitys"]
@@ -181,45 +173,20 @@ for i in range(len(resis)):
 
 
 ## ******************************************* ##
-# "rolling_data_sin_increasing_stopped.txt"
-filenames = ["rolling_data_SBPA.txt", "rolling_data_PID.txt", "rolling_data_sin_6A.txt", "rolling_data_PID2.txt", "rolling_data_SBPA.txt"] 
+
+
+
+filenames = ["rolling_data_PID2.txt"] 
+filenames = ["rolling_data_sin_sin_stopped.txt"] 
 # filenames = txt_files
 
 
+k2 = k2 * factor_inv_current
+k3 = k3 * factor_velocity
 print("Modelo com parametros ajustados")
-k2 = k2 * 2
-k3 = k3 / 150
-
-# calculate termique model
-def thermal_model(times_fit, iqs, ids):
-    K1 = 0.0102
-    K2 = 1/529
-    K3 = 1 # 45/25
-    T_AMBIENT = 25
-    temps_model = [T_AMBIENT]
-    for i in range(0, len(ids)-1):
-        delta_t = temps_model[-1] - T_AMBIENT
-        current = ids[i]*ids[i] + iqs[i]*iqs[i]
-        temp_derivate = ((current * K1) - (delta_t * K2)) * K3
-        DT = times_fit[i+1] - times_fit[i]
-        temps_model.append(temps_model[-1] + ((temp_derivate) * DT))
-    return temps_model
-
-
-
 print(f"t = {round(k1)}*(u - kv*w)/i + {round(k2)}*i {round(k3, 3)}*w {round(k4)}")
 
-def complementaryFilter(arr_hp, arr_lp, tau_hp, tau_lp):
-    arr_hp = HPF_FILTER(tau_hp, arr_hp)
-    arr_lp = LPF_FILTER(tau_lp, arr_lp)
-    
-    arr_filtered = []
-    for i in range(len(arr_hp)):
-        arr_filtered.append(arr_hp[i] + arr_lp[i])
 
-    # arr_filtered = MEDIAN_FILTER(arr_filtered, 10)
-
-    return arr_filtered
 
 for filename in filenames:
     times, ids, iqs, vds, vqs, velocitys, temps_measured, positions = get_data(filename)
@@ -233,6 +200,7 @@ for filename in filenames:
     iqs_temp = []
     ids_temp = []
     velocitys_temp = []
+    iqs_raw = iqs.copy()
 
     for i in range(len(vqs)):
         if i >times[i] > 8 and abs(iqs[i]) > CURRENT_LIMIT:
@@ -265,13 +233,30 @@ for filename in filenames:
 
     temps_model = thermal_model(times_fit, iqs, ids)
 
+
+
+    # Criando a figura e os subplots
+    fig, axs = plt.subplots(2, 1, figsize=(8, 6))
+
+    # Plotando o primeiro gráfico na posição (0, 0) da grade (em cima)
     tau = 0.001
-    plt.plot(times_fit, temps_fit, 'g.', label="Measured Temperature")
-    # plt.plot(times_fit, temps_lstq, 'r,',label="Estimated Temperature with resistance model")
-    plt.plot(times_fit, complementaryFilter(temps_model, temps_lstq, 1-tau, tau), label=f"Complementary Filter tau_hp = {1-tau}, tau_lp = {tau}")
-    plt.plot(times_fit, fusion_model(temps_lstq, times_fit, ids, iqs), '.', label=f"Fusion Ben")
-    plt.title("Filename = " + filename)
-    plt.xlabel('Time [s]')
-    plt.ylabel('Temperature [° Celsius]')
-    plt.legend()
+    axs[0].plot(times_fit, temps_fit, 'g.', label="Measured Temperature")
+    axs[0].plot(times_fit, temps_lstq, 'r,', label="Estimated Temperature")
+    # axs[0].plot(times_fit, complementaryFilter(temps_model, temps_lstq, 1-tau, tau), ":", label=f"Complementary Filter tau_hp = {1-tau}, tau_lp = {tau}")
+    # axs[0].plot(times_fit, fusion_model(temps_lstq, times_fit, ids, iqs), ':', label=f"Fusion Ben")
+
+    axs[0].set_xlabel('Time [s]')
+    axs[0].set_ylabel('Temperature [° Celsius]')
+    axs[0].set_title(f"Filename = {filename[13:]}, current limit = {CURRENT_LIMIT} and R^2 = {round(resultado['R²'], 2)}")
+    axs[0].legend()
+    axs[0].grid()
+
+    # axs[1].plot(times, iqs_raw, 'r.')
+    # axs[1].plot(times_fit, iqs, 'r.')
+    axs[1].plot(times_fit, inv_current, '.', label="inv_current")
+    # axs[1].plot(times_fit, velocitys, '.', label="velocitys")
+    axs[1].legend()
+    axs[1].set_xlabel('Time [s]')
+    axs[1].set_ylabel('Current [Ampere]')
+
     plt.show()

@@ -15,7 +15,7 @@ class SPIuDriver_Temp:
 
     #Initialise SPI
     self.ctrl = SpiController()
-    self.ctrl.configure('ftdi://ftdi:232h:01:04/1')
+    self.ctrl.configure('ftdi://ftdi:232h:01:6/1')
     self.spi = self.ctrl.get_port(0, mode=0, freq=5000000)
 
 

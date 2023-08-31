@@ -1,15 +1,35 @@
-import os
+#!/usr/bin/env python3
+"""Example to get keyboard presses without blocking a main running thread."""
 
-def get_matching_txt_files(folder_path, prefix):
-    matching_files = []
-    for filename in os.listdir(folder_path):
-        if filename.startswith(prefix) and filename.endswith(".txt"):
-            matching_files.append(filename)
-    return matching_files
+import concurrent.futures
+import time
+from inputs import get_key
 
-folder_path = "./"  # Substitua pelo caminho da sua pasta
-prefix = "rolling_data"
+oi=0
 
-txt_files = get_matching_txt_files(folder_path, prefix)
-for txt_file in txt_files:
-    print(txt_file)
+def read_keyboard():
+    global oi 
+    while True:
+        for event in get_key():
+            if event.state == 1:
+                print("key pressed")
+                oi = oi + 1
+
+
+def run():
+    global oi
+    while True:
+        print("running...", oi)
+        time.sleep(1)
+
+
+def main():
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        executor.submit(read_keyboard)
+        executor.submit(run)
+
+
+if __name__ == "__main__":
+    main()
+
+

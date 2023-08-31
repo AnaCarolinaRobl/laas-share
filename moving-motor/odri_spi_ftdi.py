@@ -33,7 +33,7 @@ class SPIuDriver:
 
     #Initialise SPI
     self.ctrl = SpiController()
-    self.ctrl.configure('ftdi://ftdi:232h:01:02/1') # Configure the first interface (IF/1) of the FTDI device as a SPI master
+    self.ctrl.configure('ftdi://ftdi:232h:01:2/1') # Configure the first interface (IF/1) of the FTDI device as a SPI master
     self.spi = self.ctrl.get_port(0, mode=0, freq=8000000)
 
     # Allocate all variables
@@ -136,6 +136,7 @@ class SPIuDriver:
     commandPacket[-2]=(crc>>8)&0xff
     commandPacket[-1]=(crc)&0xff
     sensorPacket = bytearray(self.spi.exchange(commandPacket, 34, duplex=True))
+
     if checkcrc(sensorPacket):
     #decode received sensor packet
       data = struct.unpack(">H H i i h h h h h h h h xxxxxx",sensorPacket)
